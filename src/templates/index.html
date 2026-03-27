@@ -575,7 +575,7 @@ function showTab(name) {
   document.querySelectorAll(".tb").forEach(b => b.classList.remove("active"));
   document.getElementById("pane-" + name).classList.add("active");
   document.getElementById("tb-" + name).classList.add("active");
-  if (name === "config") { loadDBStatus(); loadStorageInfo(); }
+  if (name === "config") { loadDBStatus(); loadStorageInfo(); loadFilters(); }
 }
 
 function showCfg(name) {
@@ -791,14 +791,23 @@ function toggleType(key) {
 }
 
 async function loadFilters() {
+  const DEFAULTS = ["artifact","battle","creature","enchantment","instant","planeswalker","sorcery"];
   try {
     const d = await apiGet("/api/filters");
     filterState = d.filters || {};
-    Object.entries(filterState).forEach(([k,v]) => {
-      const el = document.getElementById("chk-" + k);
-      if (el && !el.disabled) el.checked = !!v;
+    ALL_TYPES.filter(t => !t.off).forEach(t => {
+      const el = document.getElementById("chk-" + t.k);
+      if (!el) return;
+      const val = (t.k in filterState) ? !!filterState[t.k] : DEFAULTS.includes(t.k);
+      el.checked = val;
+      filterState[t.k] = val;
     });
-  } catch(e) {}
+  } catch(e) {
+    DEFAULTS.forEach(k => {
+      const el = document.getElementById("chk-" + k);
+      if (el) { el.checked = true; filterState[k] = true; }
+    });
+  }
 }
 
 async function saveFilters() {
