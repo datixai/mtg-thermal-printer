@@ -209,7 +209,7 @@ class ThermalPrinter:
         toughness = card.get("toughness")
         loyalty   = card.get("loyalty")
 
-        print(f"\n{'═'*w}")
+        print(f"\n{'='*w}")
         print(f"  {name:<{w-len(mana_cost)-4}}{mana_cost}")
         print(sep)
         print(f"  {type_line}")
@@ -225,7 +225,7 @@ class ThermalPrinter:
         set_id = card.get("set", "").upper()
         if rarity:
             print(f"  {rarity} · {set_id}")
-        print(f"{'═'*w}\n")
+        print(f"{'='*w}\n")
         logger.info(f"[SIM] Printed: {name}")
         return True
 
@@ -252,7 +252,7 @@ class ThermalPrinter:
         """Wrap a single line to paper width."""
         if len(text) <= self._paper_chars:
             return text
-        return text[:self._paper_chars - 1] + "…"
+        return text[:self._paper_chars - 3] + "..."
 
     def _reconnect(self):
         """Attempt to reconnect to printer after an error."""

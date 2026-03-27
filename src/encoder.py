@@ -160,7 +160,7 @@ class RotaryEncoder:
         self._running = True
         self._thread  = threading.Thread(target=self._keyboard_loop, daemon=True)
         self._thread.start()
-        logger.info("Encoder keyboard simulation active — keys: [←][→] arrows, Enter=select, L=long press")
+        logger.info("Encoder keyboard simulation active — keys: [a/d] or arrows, Enter=select, L=long press")
 
     def _keyboard_loop(self):
         """Non-blocking keyboard input loop for simulation."""

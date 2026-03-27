@@ -2,780 +2,912 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MTG Printer — Datix AI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="theme-color" content="#111111"/>
+  <title>MTG Printer</title>
   <style>
-    :root {
-      --bg:       #0a1628;
-      --surface:  #111d33;
-      --card:     #162040;
-      --border:   #1e3058;
-      --blue:     #2563ab;
-      --blue-l:   #3b82f6;
-      --blue-pale:#dbeafe;
-      --green:    #16a34a;
-      --green-l:  #22c55e;
-      --red:      #dc2626;
-      --gold:     #d97706;
-      --gold-l:   #fbbf24;
-      --text:     #e2e8f0;
-      --muted:    #64748b;
-      --radius:   12px;
+    *, *::before, *::after {
+      box-sizing: border-box; margin: 0; padding: 0;
+      -webkit-tap-highlight-color: transparent;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:      #111;
+      --surface: #1c1c1e;
+      --card:    #2c2c2e;
+      --border:  #3a3a3c;
+      --blue:    #0a84ff;
+      --green:   #30d158;
+      --red:     #ff453a;
+      --gold:    #ffd60a;
+      --text:    #f2f2f7;
+      --muted:   #8e8e93;
+      --tabh:    56px;
+      --hdrh:    52px;
+      --r:       12px;
+    }
+    html, body { height: 100%; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
+      background: var(--bg); color: var(--text);
+      overflow-x: hidden;
     }
 
-    /* ── Header ─────────────────────────────────────────────────── */
+    /* ── Header ─────────────────────────────────────────────── */
     header {
-      background: var(--surface);
-      border-bottom: 2px solid var(--blue);
-      padding: 0 20px;
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      height: var(--hdrh);
+      background: rgba(28,28,30,.95);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 18px;
+    }
+    .hdr-left { display: flex; align-items: center; gap: 9px; }
+    .hdr-title { font-size: 17px; font-weight: 700; }
+    .hdr-conn { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); transition: background .3s; }
+    .dot.on { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .dot.off { background: var(--red); }
+
+    /* ── Tab bar ────────────────────────────────────────────── */
+    .tabbar {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+      height: var(--tabh);
+      background: rgba(28,28,30,.97);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 56px;
-      position: sticky; top: 0; z-index: 100;
     }
-    .logo { display:flex; align-items:center; gap:10px; }
-    .logo-icon {
-      width:32px; height:32px;
-      background: linear-gradient(135deg,#3b82f6,#7c3aed);
-      border-radius:8px;
-      display:flex; align-items:center; justify-content:center;
-      font-size:18px;
+    .tb {
+      flex: 1; border: none; background: none;
+      color: var(--muted); font-size: 10px; font-weight: 600;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 3px; cursor: pointer;
+      transition: color .15s; text-transform: uppercase; letter-spacing: .04em;
     }
-    .logo-text { font-size:15px; font-weight:700; color:white; }
-    .logo-sub  { font-size:11px; color:var(--muted); }
-    #conn-dot {
-      width:10px; height:10px; border-radius:50%;
-      background:var(--muted); display:inline-block;
-      transition: background .3s;
-    }
-    #conn-dot.online  { background:var(--green-l); box-shadow:0 0 6px var(--green-l); }
-    #conn-dot.offline { background:var(--red); }
+    .tb .ico { font-size: 22px; line-height: 1; }
+    .tb.active { color: var(--blue); }
 
-    /* ── Layout ─────────────────────────────────────────────────── */
-    main { max-width:900px; margin:0 auto; padding:20px 16px 60px; }
-    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-    @media(max-width:600px){ .grid-2{ grid-template-columns:1fr; } }
-    .grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
-    @media(max-width:600px){ .grid-3{ grid-template-columns:1fr 1fr; } }
+    /* ── Main ───────────────────────────────────────────────── */
+    main {
+      margin-top: var(--hdrh);
+      padding-bottom: calc(var(--tabh) + 12px);
+      min-height: calc(100vh - var(--hdrh));
+    }
+    .pane { display: none; }
+    .pane.active { display: block; }
+    .wrap { max-width: 460px; margin: 0 auto; padding: 18px 16px 0; }
 
-    /* ── Cards ──────────────────────────────────────────────────── */
-    .panel {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 18px;
+    /* ══════════════════════════════════════════════════════════
+       CARD TOOL
+    ══════════════════════════════════════════════════════════ */
+    .cmc-disp {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 14px 20px;
+      font-size: 22px; font-weight: 600; text-align: center;
+      margin-bottom: 14px; color: var(--muted); min-height: 52px;
     }
-    .panel-title {
-      font-size:11px; font-weight:700; color:var(--muted);
-      text-transform:uppercase; letter-spacing:.08em;
-      margin-bottom:14px;
-      display:flex; align-items:center; gap:6px;
-    }
-    .panel-title .icon { font-size:14px; }
+    .cmc-disp.has { color: var(--text); }
 
-    /* ── Status display (OLED simulation) ──────────────────────── */
-    .oled-sim {
-      background:#000;
-      border:2px solid #2a2a2a;
-      border-radius:8px;
-      padding:14px 16px;
-      font-family:'Courier New',monospace;
-      min-height:64px;
-      display:flex; flex-direction:column; justify-content:center;
+    .numpad {
+      display: grid; grid-template-columns: repeat(3,1fr); gap: 10px;
+      margin-bottom: 12px;
     }
-    .oled-cmc {
-      font-size:36px; font-weight:900; color:#fff;
-      line-height:1; letter-spacing:-1px;
+    .nb {
+      background: var(--blue); color: white;
+      border: none; border-radius: var(--r);
+      padding: 20px 8px; font-size: 26px; font-weight: 700;
+      cursor: pointer; transition: opacity .1s, transform .1s;
+      touch-action: manipulation;
     }
-    .oled-label { font-size:10px; color:#666; margin-bottom:2px; }
-    .oled-status {
-      font-size:11px; color:#aaa;
-      border-top:1px solid #222; margin-top:6px; padding-top:5px;
-    }
+    .nb:active { opacity: .7; transform: scale(.94); }
+    .nb.clr { background: var(--red); grid-column: span 2; font-size: 18px; }
 
-    /* ── Big stat numbers ──────────────────────────────────────── */
-    .stat-val { font-size:28px; font-weight:800; color:var(--blue-l); line-height:1; }
-    .stat-lbl { font-size:12px; color:var(--muted); margin-top:3px; }
+    .ab {
+      width: 100%; padding: 17px; border: none; border-radius: var(--r);
+      font-size: 19px; font-weight: 700; cursor: pointer; margin-bottom: 10px;
+      transition: opacity .15s, transform .1s; touch-action: manipulation;
+      letter-spacing: .01em;
+    }
+    .ab:active { transform: scale(.97); opacity: .85; }
+    .ab:disabled { opacity: .45; cursor: not-allowed; transform: none !important; }
+    .ab.enter  { background: var(--green); color: #000; }
+    .ab.random { background: var(--gold);  color: #000; }
 
-    /* ── Buttons ────────────────────────────────────────────────── */
-    .btn {
-      display:inline-flex; align-items:center; justify-content:center; gap:6px;
-      padding:9px 18px; border-radius:8px;
-      font-size:13px; font-weight:600; border:none; cursor:pointer;
-      transition: all .15s; text-decoration:none;
+    /* Card result */
+    .card-result { text-align: center; }
+    .card-result img {
+      max-width: 100%; max-height: 62vh;
+      border-radius: 14px;
+      box-shadow: 0 12px 40px rgba(0,0,0,.75);
+      display: block; margin: 0 auto 16px;
     }
-    .btn-primary { background:var(--blue); color:white; }
-    .btn-primary:hover { background:var(--blue-l); }
-    .btn-success { background:var(--green); color:white; }
-    .btn-success:hover { background:var(--green-l); }
-    .btn-danger  { background:var(--red); color:white; }
-    .btn-ghost   { background:var(--border); color:var(--text); }
-    .btn-ghost:hover { background:#2a3c5a; }
-    .btn:disabled { opacity:.5; cursor:not-allowed; }
-    .btn-full { width:100%; }
-    .btn-sm { padding:6px 12px; font-size:12px; }
+    .card-info-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 18px; text-align: left; margin-bottom: 16px;
+    }
+    .ci-name { font-size: 18px; font-weight: 800; }
+    .ci-sub  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .ci-type { font-size: 13px; color: #ccc; margin-top: 10px; font-style: italic; }
+    .ci-text { font-size: 13px; color: #bbb; margin-top: 10px; line-height: 1.6; }
+    .ci-pt   { font-size: 15px; font-weight: 700; margin-top: 10px; text-align: right; }
 
-    /* ── Filter toggles ────────────────────────────────────────── */
-    .filter-grid {
-      display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px;
+    .card-btns { display: flex; gap: 10px; }
+    .ca {
+      flex: 1; padding: 15px 8px; border: none; border-radius: var(--r);
+      font-size: 16px; font-weight: 700; cursor: pointer;
+      transition: opacity .15s, transform .1s; touch-action: manipulation;
     }
-    .filter-btn {
-      padding:10px 12px; border-radius:8px; border:2px solid var(--border);
-      background:var(--surface); cursor:pointer; transition:all .15s;
-      display:flex; align-items:center; justify-content:space-between;
-      font-size:13px; font-weight:600; color:var(--text);
-    }
-    .filter-btn.active {
-      border-color:var(--green);
-      background:rgba(22,163,74,.15);
-      color:var(--green-l);
-    }
-    .filter-btn:hover { border-color:var(--blue-l); }
-    .toggle-dot {
-      width:20px; height:20px; border-radius:50%; flex-shrink:0;
-      transition:background .15s;
-    }
-    .filter-btn.active .toggle-dot { background:var(--green-l); }
-    .filter-btn:not(.active) .toggle-dot { background:var(--border); }
+    .ca:active { transform: scale(.94); opacity: .8; }
+    .ca.print { background: var(--green); color: #000; }
+    .ca.back  { background: var(--red);   color: white; }
+    .ca.again { background: var(--blue);  color: white; }
 
-    /* ── Progress bar ───────────────────────────────────────────── */
-    .progress-wrap {
-      background:var(--border); border-radius:4px; height:6px;
-      overflow:hidden; margin-top:8px;
-    }
-    .progress-bar {
-      height:100%; background:var(--blue-l);
-      border-radius:4px; transition:width .3s;
-    }
-    .progress-text { font-size:12px; color:var(--muted); margin-top:4px; }
-
-    /* ── Last card ──────────────────────────────────────────────── */
-    .card-name { font-size:16px; font-weight:700; color:white; }
-    .card-type { font-size:12px; color:var(--muted); margin-top:2px; }
-    .card-badge {
-      display:inline-block; padding:2px 8px;
-      border-radius:99px; font-size:11px; font-weight:600;
-      background:var(--border); color:var(--text); margin-top:6px;
-    }
-    .card-badge.rare      { background:#7c3aed22; color:#a78bfa; border:1px solid #7c3aed44; }
-    .card-badge.mythic    { background:var(--gold)22; color:var(--gold-l); border:1px solid var(--gold)44; }
-    .card-badge.uncommon  { background:#64748b22; color:#94a3b8; border:1px solid #64748b44; }
-    .card-badge.common    { background:#11182222; color:#64748b; border:1px solid #64748b22; }
-
-    /* ── History list ───────────────────────────────────────────── */
-    .hist-item {
-      display:flex; align-items:center; gap:10px;
-      padding:8px 0; border-bottom:1px solid var(--border);
-    }
-    .hist-item:last-child { border-bottom:none; }
-    .hist-cmc {
-      width:28px; height:28px; border-radius:50%;
-      background:var(--blue); color:white;
-      display:flex; align-items:center; justify-content:center;
-      font-size:12px; font-weight:800; flex-shrink:0;
-    }
-    .hist-name { font-size:13px; font-weight:600; }
-    .hist-time { font-size:11px; color:var(--muted); margin-left:auto; }
-
-    /* ── System info ────────────────────────────────────────────── */
-    .sysinfo-row {
-      display:flex; justify-content:space-between; align-items:center;
-      padding:6px 0; border-bottom:1px solid var(--border);
-      font-size:13px;
-    }
-    .sysinfo-row:last-child { border-bottom:none; }
-    .sysinfo-val { font-weight:600; color:var(--blue-l); }
-
-    /* ── CMC test ───────────────────────────────────────────────── */
-    .cmc-input {
-      background:var(--surface); border:1px solid var(--border);
-      color:var(--text); padding:8px 12px; border-radius:8px;
-      font-size:14px; font-weight:700; width:70px; text-align:center;
+    /* No DB notice */
+    .nodb-notice {
+      background: #3a1a00; border: 1px solid #7a3a00;
+      border-radius: var(--r); padding: 14px 16px;
+      font-size: 13px; color: #ffb347;
+      text-align: center; line-height: 1.55; margin-bottom: 16px;
     }
 
-    /* ── Toast ──────────────────────────────────────────────────── */
+    /* ══════════════════════════════════════════════════════════
+       RULES
+    ══════════════════════════════════════════════════════════ */
+    .rules-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 28px 22px; text-align: center;
+    }
+    .rules-box h1 { font-size: 28px; font-weight: 800; margin-bottom: 26px; }
+    .rules-section { margin-bottom: 24px; }
+    .rules-section h2 { font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+    .rules-section p  { font-size: 15px; color: #ccc; line-height: 1.65; margin-bottom: 4px; }
+    .rules-ability {
+      margin-top: 12px; padding: 14px 16px;
+      background: var(--card); border-radius: 10px;
+      font-size: 14px; color: #ddd; line-height: 1.65;
+      font-style: italic; text-align: left;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       TOKEN
+    ══════════════════════════════════════════════════════════ */
+    .token-wrap { text-align: center; }
+    .token-wrap h1 { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+    .token-wrap .subtitle {
+      font-size: 13px; color: var(--muted); margin-bottom: 20px; line-height: 1.5;
+    }
+    .token-img {
+      max-width: 100%; max-height: 60vh;
+      border-radius: 14px;
+      box-shadow: 0 12px 40px rgba(0,0,0,.75);
+      display: block; margin: 0 auto 20px;
+    }
+    .token-fallback {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 20px; text-align: left; margin-bottom: 18px;
+    }
+    .token-print-btn {
+      background: var(--green); color: #000;
+      border: none; border-radius: var(--r);
+      padding: 14px 52px; font-size: 17px; font-weight: 700;
+      cursor: pointer; transition: opacity .15s; touch-action: manipulation;
+    }
+    .token-print-btn:active { opacity: .8; }
+    .token-loading {
+      color: var(--muted); font-size: 14px; padding: 40px 0; text-align: center;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       CONFIG
+    ══════════════════════════════════════════════════════════ */
+    .cfg-tabs {
+      display: flex; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 4px; margin-bottom: 18px;
+    }
+    .cstab {
+      flex: 1; padding: 9px; border: none; border-radius: 8px;
+      background: none; color: var(--muted);
+      font-size: 13px; font-weight: 700; cursor: pointer; transition: all .15s;
+    }
+    .cstab.active { background: var(--blue); color: white; }
+
+    .cfg-sec { display: none; }
+    .cfg-sec.active { display: block; }
+
+    .cfg-row {
+      display: flex; align-items: center; gap: 14px;
+      padding: 15px 0; border-bottom: 1px solid var(--border); cursor: pointer;
+    }
+    .cfg-row:last-child { border-bottom: none; }
+    .cfg-row input[type="checkbox"] {
+      width: 22px; height: 22px; accent-color: var(--blue);
+      cursor: pointer; flex-shrink: 0;
+    }
+    .cfg-row label { font-size: 17px; cursor: pointer; flex: 1; }
+    .cfg-row.disabled label { color: var(--muted); }
+
+    .cfg-save {
+      width: 100%; margin-top: 18px; padding: 15px;
+      background: var(--blue); color: white; border: none;
+      border-radius: var(--r); font-size: 17px; font-weight: 700;
+      cursor: pointer; transition: opacity .15s;
+    }
+    .cfg-save:active { opacity: .8; }
+
+    /* Info boxes in config */
+    .info-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 16px; margin-bottom: 14px;
+      font-size: 14px; line-height: 1.7;
+    }
+    .info-box strong { color: var(--text); display: block; margin-bottom: 8px; font-size: 15px; }
+    .info-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--border); }
+    .info-row:last-child { border-bottom: none; }
+    .info-lbl { color: var(--muted); }
+    .info-val { font-weight: 700; color: var(--blue); }
+
+    /* Progress */
+    .prog-wrap { background: var(--border); border-radius: 99px; height: 5px; overflow: hidden; margin-top: 8px; }
+    .prog-bar  { height: 100%; background: var(--blue); border-radius: 99px; transition: width .3s; }
+
+    /* ── Footer ─────────────────────────────────────────────── */
+    footer {
+      text-align: center; padding: 28px 0 10px;
+      color: var(--muted); font-size: 12px;
+    }
+    footer a { color: var(--blue); text-decoration: none; }
+
+    /* ── Spinner ────────────────────────────────────────────── */
+    .spin {
+      display: inline-block; width: 18px; height: 18px;
+      border: 3px solid rgba(0,0,0,.25); border-top-color: #000;
+      border-radius: 50%; animation: rot .6s linear infinite; vertical-align: middle;
+    }
+    @keyframes rot { to { transform: rotate(360deg); } }
+
+    /* ── Toast ──────────────────────────────────────────────── */
     #toast {
-      position:fixed; bottom:24px; right:24px;
-      background:#1e293b; color:white;
-      padding:12px 20px; border-radius:10px;
-      font-size:13px; font-weight:600;
-      box-shadow:0 4px 20px rgba(0,0,0,.5);
-      border-left:4px solid var(--green);
-      transform:translateY(100px); opacity:0;
-      transition:all .3s; z-index:999;
-      max-width:280px;
+      position: fixed; bottom: calc(var(--tabh) + 14px); left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #2c2c2e; color: white;
+      padding: 11px 22px; border-radius: 99px;
+      font-size: 14px; font-weight: 600;
+      opacity: 0; transition: all .3s; z-index: 999;
+      pointer-events: none; white-space: nowrap;
+      max-width: 90vw; text-align: center;
+      border: 1px solid var(--border);
     }
-    #toast.show { transform:translateY(0); opacity:1; }
-    #toast.error { border-left-color:var(--red); }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-    /* ── Misc ───────────────────────────────────────────────────── */
-    .section-gap { margin-top:20px; }
-    .row-gap { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    .chip {
-      display:inline-block; padding:3px 10px; border-radius:99px;
-      font-size:11px; background:var(--border); color:var(--muted);
+    /* ── Desktop ────────────────────────────────────────────── */
+    @media (min-width: 640px) {
+      .tabbar { position: fixed; top: var(--hdrh); bottom: auto; border-top: none; border-bottom: 1px solid var(--border); height: 48px; }
+      .tb { flex-direction: row; gap: 7px; font-size: 13px; }
+      .tb .ico { font-size: 16px; }
+      main { margin-top: calc(var(--hdrh) + 48px); padding-bottom: 28px; }
+      #toast { bottom: 24px; }
     }
-    .text-green { color:var(--green-l); }
-    .text-red   { color:#f87171; }
-    .text-gold  { color:var(--gold-l); }
-    .bold { font-weight:700; }
-    label { font-size:13px; color:var(--muted); display:block; margin-bottom:6px; }
-    .empty-state { color:var(--muted); font-size:13px; text-align:center; padding:20px; }
-    .mb-2 { margin-bottom:8px; }
-    .mt-2 { margin-top:8px; }
-    .spinner {
-      display:inline-block; width:14px; height:14px;
-      border:2px solid var(--border); border-top-color:var(--blue-l);
-      border-radius:50%; animation:spin .7s linear infinite;
+
+    /* ── Print styles ───────────────────────────────────────── */
+    @media print {
+      header, .tabbar, #toast { display: none !important; }
+      body { background: white; color: black; }
+      #print-area {
+        display: block !important;
+        text-align: center;
+      }
+      #print-area img { max-width: 100%; max-height: 90vh; border-radius: 8px; }
     }
-    @keyframes spin { to { transform:rotate(360deg); } }
   </style>
 </head>
 <body>
 
-<!-- ══ HEADER ════════════════════════════════════════════════════════════ -->
+<!-- Hidden print area -->
+<div id="print-area" style="display:none"></div>
+
+<!-- ══ HEADER ════════════════════════════════════════════════ -->
 <header>
-  <div class="logo">
-    <div class="logo-icon">🃏</div>
-    <div>
-      <div class="logo-text">MTG Printer</div>
-      <div class="logo-sub">Datix AI · datixai.com</div>
-    </div>
+  <div class="hdr-left">
+    <span style="font-size:22px">🃏</span>
+    <div class="hdr-title">MTG Printer</div>
   </div>
-  <div style="display:flex;align-items:center;gap:8px;">
-    <span id="conn-dot"></span>
-    <span style="font-size:12px;color:var(--muted)" id="conn-label">Connecting...</span>
+  <div class="hdr-conn">
+    <div class="dot" id="dot"></div>
+    <span id="conn-lbl">—</span>
   </div>
 </header>
 
-<!-- ══ MAIN ══════════════════════════════════════════════════════════════ -->
+<!-- ══ TAB BAR ══════════════════════════════════════════════ -->
+<nav class="tabbar">
+  <button class="tb active" id="tb-card"   onclick="showTab('card')">
+    <span class="ico">🃏</span><span>Card Tool</span>
+  </button>
+  <button class="tb"        id="tb-rules"  onclick="showTab('rules')">
+    <span class="ico">📖</span><span>Rules</span>
+  </button>
+  <button class="tb"        id="tb-token"  onclick="showTab('token')">
+    <span class="ico">🌿</span><span>Token</span>
+  </button>
+  <button class="tb"        id="tb-config" onclick="showTab('config')">
+    <span class="ico">⚙️</span><span>Config</span>
+  </button>
+</nav>
+
 <main>
 
-  <!-- Row 1: OLED + Status -->
-  <div class="grid-2 mb-2">
+  <!-- ══ CARD TOOL ══════════════════════════════════════════ -->
+  <div class="pane active" id="pane-card">
+    <div class="wrap">
 
-    <!-- OLED Simulation -->
-    <div class="panel">
-      <div class="panel-title"><span class="icon">📺</span> Device Display</div>
-      <div class="oled-sim">
-        <div class="oled-label">CMC</div>
-        <div class="oled-cmc" id="oled-cmc">0</div>
-        <div class="oled-status" id="oled-status">Connecting...</div>
+      <div class="nodb-notice" id="nodb-notice" style="display:none">
+        ⚠️ No card database loaded.<br/>
+        Go to <strong>Config → Database</strong> and tap <strong>Update Database</strong>.
       </div>
-      <div style="margin-top:12px;display:flex;gap:8px;">
-        <button class="btn btn-ghost btn-sm" onclick="sendCMC(-1)">◀ CMC-1</button>
-        <button class="btn btn-ghost btn-sm" onclick="sendCMC(+1)">CMC+1 ▶</button>
-      </div>
-    </div>
 
-    <!-- Quick stats -->
-    <div class="panel">
-      <div class="panel-title"><span class="icon">📊</span> Database</div>
-      <div class="grid-2" style="gap:12px">
-        <div>
-          <div class="stat-val" id="stat-cards">—</div>
-          <div class="stat-lbl">Total Cards</div>
+      <!-- Numpad screen -->
+      <div id="input-screen">
+        <div class="cmc-disp" id="cmc-disp">Mana cost</div>
+        <div class="numpad">
+          <button class="nb" onclick="num('1')">1</button>
+          <button class="nb" onclick="num('2')">2</button>
+          <button class="nb" onclick="num('3')">3</button>
+          <button class="nb" onclick="num('4')">4</button>
+          <button class="nb" onclick="num('5')">5</button>
+          <button class="nb" onclick="num('6')">6</button>
+          <button class="nb" onclick="num('7')">7</button>
+          <button class="nb" onclick="num('8')">8</button>
+          <button class="nb" onclick="num('9')">9</button>
+          <button class="nb" onclick="num('0')">0</button>
+          <button class="nb clr" onclick="clr()">Clear</button>
         </div>
-        <div>
-          <div class="stat-val" id="stat-prints">0</div>
-          <div class="stat-lbl">Prints (session)</div>
+        <button class="ab enter"  id="btn-enter"  onclick="getCard()">Enter</button>
+        <button class="ab random" id="btn-random" onclick="getCardRandom()">Random</button>
+      </div>
+
+      <!-- Card result screen -->
+      <div id="card-screen" style="display:none">
+        <div class="card-result">
+          <div id="card-display-area"></div>
+          <div class="card-btns">
+            <button class="ca print" onclick="printCard()">Print</button>
+            <button class="ca back"  onclick="goBack()">Back</button>
+            <button class="ca again" onclick="getCard()">Again</button>
+          </div>
         </div>
       </div>
-      <div style="margin-top:12px;font-size:12px;color:var(--muted)">
-        Last updated: <span id="stat-updated">—</span>
-      </div>
-      <div style="margin-top:8px;font-size:12px;" id="stat-platform"></div>
+
+      <footer>Developed by <a href="https://datixai.com" target="_blank">Datix AI</a></footer>
     </div>
   </div>
 
-  <!-- Row 2: Card Filters -->
-  <div class="panel section-gap">
-    <div class="panel-title" style="justify-content:space-between">
-      <span><span class="icon">🎴</span> Card Type Filters</span>
-      <button class="btn btn-success btn-sm" id="btn-save-filters" onclick="saveFilters()">
-        Save Filters
-      </button>
-    </div>
-    <div class="filter-grid" id="filter-grid">
-      <!-- Populated by JS -->
-    </div>
-    <div style="margin-top:10px;font-size:12px;color:var(--muted)" id="filter-hint">
-      Toggle which card types are included in random selection. Changes take effect immediately.
+  <!-- ══ RULES ══════════════════════════════════════════════ -->
+  <div class="pane" id="pane-rules">
+    <div class="wrap">
+      <div class="rules-box">
+        <h1>Rules</h1>
+
+        <div class="rules-section">
+          <h2>Each deck is composed of:</h2>
+          <p>— 60 basic lands (12 of each type)</p>
+          <p>— 40 creature cards</p>
+        </div>
+
+        <div class="rules-section">
+          <h2>Each player receives:</h2>
+          <p>— 24 life points;</p>
+          <p>— 1 Emblem:</p>
+          <div class="rules-ability">
+            {X}, Discard a Card: Create a token that's a copy of a random creature card
+            with converted mana cost X. Activate this ability only any time you could
+            cast a sorcery and only once each turn.
+          </div>
+        </div>
+      </div>
+      <footer>Developed by <a href="https://datixai.com" target="_blank">Datix AI</a></footer>
     </div>
   </div>
 
-  <!-- Row 3: Test Print + Update -->
-  <div class="grid-2 section-gap">
+  <!-- ══ TOKEN ══════════════════════════════════════════════ -->
+  <div class="pane" id="pane-token">
+    <div class="wrap">
+      <div class="token-wrap">
+        <h1>Token</h1>
+        <p class="subtitle">The Momir Vig emblem — each player has one during the game.</p>
 
-    <!-- Test Print -->
-    <div class="panel">
-      <div class="panel-title"><span class="icon">🖨️</span> Test Print</div>
-      <label>CMC Value</label>
-      <div class="row-gap">
-        <input type="number" id="test-cmc" class="cmc-input" value="3" min="0" max="16"/>
-        <button class="btn btn-primary" onclick="testPrint()" id="btn-test-print">
-          Print Card
+        <div id="token-loading" class="token-loading">Loading token card...</div>
+
+        <img id="token-img" class="token-img" src="" alt="Factory of Momir Vig"
+             style="display:none"
+             onload="this.style.display='block'; document.getElementById('token-loading').style.display='none'; document.getElementById('token-fb').style.display='none';"
+             onerror="this.style.display='none'; document.getElementById('token-loading').style.display='none'; document.getElementById('token-fb').style.display='block';"
+        />
+
+        <div id="token-fb" class="token-fallback" style="display:none">
+          <div class="ci-name">Factory of Momir Vig</div>
+          <div class="ci-type" style="margin-top:8px;font-style:italic;color:#ccc">Emblem</div>
+          <div class="ci-text" style="margin-top:10px">
+            {X}, Discard a Card: Create a token that's a copy of a random creature card
+            with converted mana cost X. Activate this ability only any time you could
+            cast a sorcery and only once each turn.
+          </div>
+        </div>
+
+        <br/>
+        <button class="token-print-btn" onclick="printTokenCard()">Print</button>
+      </div>
+      <footer>Developed by <a href="https://datixai.com" target="_blank">Datix AI</a></footer>
+    </div>
+  </div>
+
+  <!-- ══ CONFIG ══════════════════════════════════════════════ -->
+  <div class="pane" id="pane-config">
+    <div class="wrap">
+
+      <div class="cfg-tabs">
+        <button class="cstab active" id="cst-types"   onclick="showCfg('types')">Card Types</button>
+        <button class="cstab"        id="cst-formats" onclick="showCfg('formats')">Formats</button>
+        <button class="cstab"        id="cst-db"      onclick="showCfg('db')">Database</button>
+      </div>
+
+      <!-- Card Types -->
+      <div class="cfg-sec active" id="cfg-types">
+        <div id="types-list"></div>
+        <button class="cfg-save" onclick="saveFilters()">Save</button>
+      </div>
+
+      <!-- Formats (placeholder) -->
+      <div class="cfg-sec" id="cfg-formats">
+        <div class="info-box" style="color:var(--muted);text-align:center;padding:28px">
+          Format filtering (Standard, Pioneer, Modern, etc.) coming in a future update.
+        </div>
+      </div>
+
+      <!-- Database + Storage -->
+      <div class="cfg-sec" id="cfg-db">
+
+        <!-- What is this app? -->
+        <div class="info-box" style="border-color:rgba(10,132,255,.35)">
+          <strong>What is this app?</strong>
+          This is a companion tool for playing <em>Momir Basic</em> — a Magic: The Gathering
+          format where players use only basic lands and randomly generated creature cards
+          each turn. Enter a mana cost, press Enter, and a random card appears (or prints
+          on the connected thermal printer). The database stores every MTG card ever printed
+          and works completely offline after the first download.
+        </div>
+
+        <!-- DB Status -->
+        <div class="info-box" id="db-info-box">
+          <strong>Database Status</strong>
+          <div id="db-rows">
+            <div class="info-row"><span class="info-lbl">Cards loaded</span><span class="info-val" id="dbi-cards">—</span></div>
+            <div class="info-row"><span class="info-lbl">Last updated</span><span class="info-val" id="dbi-updated">—</span></div>
+            <div class="info-row"><span class="info-lbl">Status</span><span class="info-val" id="dbi-status">—</span></div>
+          </div>
+        </div>
+
+        <!-- Storage -->
+        <div class="info-box" id="storage-box">
+          <strong>Device Storage</strong>
+          <div id="storage-rows">
+            <div class="info-row"><span class="info-lbl">Free space</span><span class="info-val" id="sto-free">—</span></div>
+            <div class="info-row"><span class="info-lbl">Total storage</span><span class="info-val" id="sto-total">—</span></div>
+            <div class="info-row"><span class="info-lbl">Used</span><span class="info-val" id="sto-pct">—</span></div>
+            <div class="info-row"><span class="info-lbl">Memory (RAM)</span><span class="info-val" id="sto-ram">—</span></div>
+            <div class="info-row"><span class="info-lbl">Platform</span><span class="info-val" id="sto-plat">—</span></div>
+          </div>
+        </div>
+
+        <button class="cfg-save" id="btn-update" onclick="startUpdate()">
+          Update Database
         </button>
-      </div>
-      <div style="margin-top:12px;" id="test-result"></div>
-    </div>
 
-    <!-- Database Update -->
-    <div class="panel">
-      <div class="panel-title"><span class="icon">🔄</span> Update Database</div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">
-        Downloads latest card data from Scryfall. Requires Wi-Fi (~100MB). Takes 5–15 minutes.
-      </p>
-      <button class="btn btn-primary btn-full" id="btn-update" onclick="startUpdate()">
-        Download Latest Cards
-      </button>
-      <div id="update-status" style="margin-top:10px;display:none">
-        <div class="progress-text" id="update-msg">Starting...</div>
-        <div class="progress-wrap">
-          <div class="progress-bar" id="update-bar" style="width:0%"></div>
+        <div id="upd-wrap" style="display:none;margin-top:14px">
+          <div style="font-size:13px;color:var(--muted);margin-bottom:7px" id="upd-msg">Starting...</div>
+          <div class="prog-wrap"><div class="prog-bar" id="upd-bar" style="width:0%"></div></div>
+          <div style="font-size:11px;color:var(--muted);margin-top:5px" id="upd-pct">0%</div>
         </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px" id="update-pct">0%</div>
+
+        <div style="font-size:12px;color:var(--muted);margin-top:12px;line-height:1.6">
+          Requires Wi-Fi. Downloads ~100MB from Scryfall. Takes 5–15 minutes.
+          After downloading, the app works completely offline.
+        </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Row 4: Last Card + History -->
-  <div class="grid-2 section-gap">
-
-    <!-- Last Printed Card -->
-    <div class="panel">
-      <div class="panel-title"><span class="icon">🃏</span> Last Printed</div>
-      <div id="last-card-panel">
-        <div class="empty-state">No cards printed yet</div>
-      </div>
-    </div>
-
-    <!-- Print History -->
-    <div class="panel">
-      <div class="panel-title"><span class="icon">📜</span> Print History</div>
-      <div id="history-list">
-        <div class="empty-state">No history yet</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Row 5: System Info -->
-  <div class="panel section-gap">
-    <div class="panel-title"><span class="icon">⚙️</span> System Information</div>
-    <div id="sysinfo-content">
-      <div class="empty-state">Loading...</div>
-    </div>
-    <div style="margin-top:12px">
-      <button class="btn btn-ghost btn-sm" onclick="loadSysInfo()">Refresh</button>
-    </div>
-  </div>
-
-  <!-- CMC availability checker -->
-  <div class="panel section-gap">
-    <div class="panel-title"><span class="icon">🔍</span> CMC Card Availability</div>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">
-      Check how many cards are available at each mana cost with current filters.
-    </p>
-    <div id="cmc-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:6px">
-      <!-- populated by JS -->
+      <footer>Developed by <a href="https://datixai.com" target="_blank">Datix AI</a></footer>
     </div>
   </div>
 
 </main>
 
-<!-- Toast notification -->
 <div id="toast"></div>
 
 <script>
-// ══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 // STATE
-// ══════════════════════════════════════════════════════════════════════════════
-const API = "";  // Same origin
+// ═══════════════════════════════════════════════════════════
+let numStr      = "";
+let lastCMC     = null;
+let currentCard = null;
 let filterState = {};
-let pollInterval = null;
-let updatePollInterval = null;
-let currentCMC = 0;
+let dbLoaded    = false;
+let tokenData   = null;
 
-// ══════════════════════════════════════════════════════════════════════════════
-// INITIALISATION
-// ══════════════════════════════════════════════════════════════════════════════
+// All card types — off=true means disabled/greyed (special types)
+const ALL_TYPES = [
+  {k:"artifact",    l:"Artifact"},
+  {k:"battle",      l:"Battle"},
+  {k:"conspiracy",  l:"Conspiracy",  off:true},
+  {k:"creature",    l:"Creature"},
+  {k:"dungeon",     l:"Dungeon",     off:true},
+  {k:"emblem",      l:"Emblem",      off:true},
+  {k:"enchantment", l:"Enchantment"},
+  {k:"hero",        l:"Hero",        off:true},
+  {k:"instant",     l:"Instant"},
+  {k:"kindred",     l:"Kindred",     off:true},
+  {k:"land",        l:"Land",        off:true},
+  {k:"phenomenon",  l:"Phenomenon",  off:true},
+  {k:"plane",       l:"Plane",       off:true},
+  {k:"planeswalker",l:"Planeswalker"},
+  {k:"scheme",      l:"Scheme",      off:true},
+  {k:"sorcery",     l:"Sorcery"},
+  {k:"vanguard",    l:"Vanguard",    off:true},
+];
+
+// ═══════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════
 document.addEventListener("DOMContentLoaded", () => {
-  initFilters();
-  startPolling();
-  loadSysInfo();
-  renderCMCGrid();
+  buildTypesList();
+  loadFilters();
+  loadToken();
+  pollStatus();
+  setInterval(pollStatus, 3000);
 });
 
-function startPolling() {
-  poll();
-  pollInterval = setInterval(poll, 1500);
+// ═══════════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════════
+function showTab(name) {
+  document.querySelectorAll(".pane").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".tb").forEach(b => b.classList.remove("active"));
+  document.getElementById("pane-" + name).classList.add("active");
+  document.getElementById("tb-" + name).classList.add("active");
+  if (name === "config") { loadDBStatus(); loadStorageInfo(); }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// POLLING — device status
-// ══════════════════════════════════════════════════════════════════════════════
-async function poll() {
+function showCfg(name) {
+  document.querySelectorAll(".cfg-sec").forEach(s => s.classList.remove("active"));
+  document.querySelectorAll(".cstab").forEach(b => b.classList.remove("active"));
+  document.getElementById("cfg-" + name).classList.add("active");
+  document.getElementById("cst-" + name).classList.add("active");
+}
+
+// ═══════════════════════════════════════════════════════════
+// POLLING
+// ═══════════════════════════════════════════════════════════
+async function pollStatus() {
   try {
-    const res  = await fetch("/api/status");
-    const data = await res.json();
+    const d = await apiGet("/api/status");
+    setDot(true);
+    dbLoaded = d.db_loaded;
+    document.getElementById("nodb-notice").style.display = dbLoaded ? "none" : "block";
+    if (d.update_running) pollUpdate();
+  } catch(e) { setDot(false); }
+}
 
-    // Connection indicator
-    setConnected(true);
+function setDot(ok) {
+  document.getElementById("dot").className = "dot " + (ok ? "on" : "off");
+  document.getElementById("conn-lbl").textContent = ok ? "Connected" : "Offline";
+}
 
-    // OLED simulation
-    const cmc = data.cmc ?? 0;
-    currentCMC = cmc;
-    document.getElementById("oled-cmc").textContent    = cmc;
-    document.getElementById("oled-status").textContent = data.status ?? "—";
+// ═══════════════════════════════════════════════════════════
+// NUMPAD
+// ═══════════════════════════════════════════════════════════
+function num(d) {
+  if (numStr.length >= 2) return;         // max 2 digits (CMC 0-16)
+  numStr += d;
+  if (parseInt(numStr) > 16) numStr = "16"; // clamp to 16
+  updateDisp();
+}
 
-    // Stats
-    document.getElementById("stat-cards").textContent  = data.db_card_count?.toLocaleString() ?? "—";
-    document.getElementById("stat-prints").textContent = data.print_count ?? "0";
-    document.getElementById("stat-updated").textContent= data.db_last_updated
-      ? new Date(data.db_last_updated).toLocaleDateString() : "Never";
+function clr() { numStr = ""; updateDisp(); }
 
-    const plat = document.getElementById("stat-platform");
-    if (data.simulation_mode || data.platform === "Simulation") {
-      plat.innerHTML = '<span class="chip">🖥️ Simulation mode</span>';
+function updateDisp() {
+  const el = document.getElementById("cmc-disp");
+  el.textContent = numStr || "Mana cost";
+  el.classList.toggle("has", numStr !== "");
+}
+
+// ═══════════════════════════════════════════════════════════
+// CARD FETCH
+// ═══════════════════════════════════════════════════════════
+async function getCard() {
+  if (!dbLoaded) { toast("No database — go to Config > Database"); return; }
+  const cmc = numStr !== "" ? parseInt(numStr) : lastCMC;
+  if (cmc === null) { toast("Enter a mana cost first"); return; }
+  lastCMC = cmc;
+  await fetchAndShow(cmc);
+}
+
+async function getCardRandom() {
+  if (!dbLoaded) { toast("No database — go to Config > Database"); return; }
+  const cmc = Math.floor(Math.random() * 9) + 1;
+  numStr = String(cmc);
+  updateDisp();
+  await fetchAndShow(cmc);
+}
+
+async function fetchAndShow(cmc) {
+  const btn = document.getElementById("btn-enter");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>';
+
+  try {
+    const d = await apiGet(`/api/card/random?cmc=${cmc}`);
+    if (d.success && d.card) {
+      currentCard = d.card;
+      renderCard(d.card);
+      document.getElementById("input-screen").style.display = "none";
+      document.getElementById("card-screen").style.display  = "block";
     } else {
-      plat.innerHTML = '<span class="chip text-green">🔴 Live — Raspberry Pi</span>';
+      toast(d.error || `No cards at CMC ${cmc}`);
     }
+  } catch(e) { toast("Could not reach server"); }
 
-    // Last card
-    renderLastCard(data.last_card);
+  btn.disabled = false; btn.textContent = "Enter";
+}
 
-    // Update check
-    if (data.update_running) {
-      pollUpdate();
-    }
-
-  } catch (e) {
-    setConnected(false);
+function renderCard(card) {
+  const area = document.getElementById("card-display-area");
+  if (card.image_url) {
+    area.innerHTML = `
+      <img src="${esc(card.image_url)}" alt="${esc(card.name)}"
+           onerror="this.style.display='none';document.getElementById('card-fallback').style.display='block'"/>
+      <div id="card-fallback" class="card-info-box" style="display:none">
+        ${cardHTML(card)}
+      </div>`;
+  } else {
+    area.innerHTML = `<div class="card-info-box">${cardHTML(card)}</div>`;
   }
 }
 
-function setConnected(online) {
-  const dot   = document.getElementById("conn-dot");
-  const label = document.getElementById("conn-label");
-  dot.className = online ? "online" : "offline";
-  label.textContent = online ? "Connected" : "Offline";
+function cardHTML(c) {
+  let h = `<div class="ci-name">${esc(c.name)}</div>`;
+  if (c.mana_cost) h += `<div class="ci-sub">${cleanMana(c.mana_cost)} · CMC ${c.cmc}</div>`;
+  if (c.type_line)  h += `<div class="ci-type">${esc(c.type_line)}</div>`;
+  if (c.oracle_text)h += `<div class="ci-text">${esc(c.oracle_text).replace(/\n/g,"<br>")}</div>`;
+  if (c.power && c.toughness) h += `<div class="ci-pt">${esc(c.power)}/${esc(c.toughness)}</div>`;
+  else if (c.loyalty) h += `<div class="ci-pt">Loyalty: ${esc(c.loyalty)}</div>`;
+  return h;
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// FILTERS
-// ══════════════════════════════════════════════════════════════════════════════
-const FILTER_NAMES = [
-  "artifact","battle","creature","enchantment","instant","planeswalker","sorcery"
-];
-const FILTER_ICONS = {
-  artifact:"⚙️", battle:"⚔️", creature:"🐉",
-  enchantment:"✨", instant:"⚡", planeswalker:"🌟", sorcery:"🌀"
-};
-
-async function initFilters() {
-  try {
-    const res  = await fetch("/api/filters");
-    const data = await res.json();
-    filterState = data.filters ?? {};
-    renderFilters();
-  } catch (e) {
-    // Use defaults
-    FILTER_NAMES.forEach(t => filterState[t] = true);
-    renderFilters();
-  }
+function goBack() {
+  document.getElementById("card-screen").style.display  = "none";
+  document.getElementById("input-screen").style.display = "block";
+  currentCard = null;
 }
 
-function renderFilters() {
-  const grid = document.getElementById("filter-grid");
-  grid.innerHTML = "";
-  FILTER_NAMES.forEach(type => {
-    const enabled = filterState[type] !== false;
-    const btn = document.createElement("button");
-    btn.className = "filter-btn" + (enabled ? " active" : "");
-    btn.dataset.type = type;
-    btn.innerHTML = `
-      <span>${FILTER_ICONS[type]} ${type.charAt(0).toUpperCase()+type.slice(1)}</span>
-      <div class="toggle-dot"></div>
-    `;
-    btn.onclick = () => toggleFilter(type, btn);
-    grid.appendChild(btn);
+// ═══════════════════════════════════════════════════════════
+// PRINTING  —  opens browser print dialog with card image
+// ═══════════════════════════════════════════════════════════
+function printCard() {
+  if (!currentCard) { toast("No card to print"); return; }
+  openPrintWindow(currentCard);
+
+  // Also send to thermal printer if connected
+  apiPost("/api/card/print", {card: currentCard}).catch(() => {});
+}
+
+function printTokenCard() {
+  if (!tokenData) { toast("Token not loaded"); return; }
+  openPrintWindow({
+    name:        tokenData.name || "Factory of Momir Vig",
+    image_url:   tokenData.image_url || "",
+    type_line:   tokenData.type_line || "Emblem",
+    oracle_text: tokenData.oracle_text || "",
   });
+  apiPost("/api/card/print", {card: {name: "Factory of Momir Vig", type_line: "Emblem", oracle_text: tokenData.oracle_text}}).catch(() => {});
 }
 
-function toggleFilter(type, btn) {
-  filterState[type] = !filterState[type];
-  btn.classList.toggle("active", filterState[type]);
-  // Update hint
-  const enabled = FILTER_NAMES.filter(t => filterState[t] !== false);
-  document.getElementById("filter-hint").textContent =
-    enabled.length === 0
-      ? "⚠️ Warning: All types disabled — no cards will be selectable!"
-      : `${enabled.length} type(s) active. Click Save Filters to apply.`;
+function openPrintWindow(card) {
+  const pw = window.open("", "_blank", "width=500,height=700");
+  if (!pw) { toast("Allow popups to print"); return; }
+
+  const imgTag = card.image_url
+    ? `<img src="${esc(card.image_url)}" style="max-width:100%;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.3)"/>`
+    : `<div style="font-family:sans-serif;padding:20px;border:1px solid #ccc;border-radius:10px">
+         <h2 style="margin:0 0 8px">${esc(card.name)}</h2>
+         <p style="color:#555;font-style:italic">${esc(card.type_line||"")}</p>
+         <p style="margin-top:12px;line-height:1.6">${esc(card.oracle_text||"")}</p>
+       </div>`;
+
+  pw.document.write(`<!DOCTYPE html>
+<html><head>
+<title>${esc(card.name)}</title>
+<meta charset="UTF-8"/>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { display: flex; flex-direction: column; align-items: center;
+         justify-content: center; min-height: 100vh; padding: 20px;
+         font-family: sans-serif; background: white; }
+  img { max-width: 380px; width: 100%; }
+  .no-print { margin-top: 20px; }
+  button { padding: 10px 32px; font-size: 15px; background: #0a84ff;
+           color: white; border: none; border-radius: 8px; cursor: pointer; }
+  @media print { .no-print { display: none; } }
+</style>
+</head><body>
+${imgTag}
+<div class="no-print">
+  <button onclick="window.print()">Print</button>
+</div>
+<script>
+  setTimeout(() => { window.print(); }, 400);
+<\/script>
+</body></html>`);
+  pw.document.close();
+}
+
+// ═══════════════════════════════════════════════════════════
+// TOKEN
+// ═══════════════════════════════════════════════════════════
+async function loadToken() {
+  try {
+    const d = await apiGet("/api/token");
+    tokenData = d;
+    const img = document.getElementById("token-img");
+    if (d.image_url) {
+      img.src = d.image_url;
+    } else {
+      document.getElementById("token-loading").style.display = "none";
+      document.getElementById("token-fb").style.display = "block";
+    }
+  } catch(e) {
+    document.getElementById("token-loading").style.display = "none";
+    document.getElementById("token-fb").style.display = "block";
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// CONFIG — CARD TYPES
+// ═══════════════════════════════════════════════════════════
+function buildTypesList() {
+  document.getElementById("types-list").innerHTML = ALL_TYPES.map(t => {
+    const isOff = !!t.off;
+    return `<div class="cfg-row${isOff?" disabled":""}" onclick="${isOff?"":"toggleType('"+t.k+"')"}">
+      <input type="checkbox" id="chk-${t.k}" ${isOff?"disabled":""}/>
+      <label for="chk-${t.k}">${t.l}</label>
+    </div>`;
+  }).join("");
+}
+
+function toggleType(key) {
+  const el = document.getElementById("chk-" + key);
+  el.checked = !el.checked;
+  filterState[key] = el.checked;
+}
+
+async function loadFilters() {
+  try {
+    const d = await apiGet("/api/filters");
+    filterState = d.filters || {};
+    Object.entries(filterState).forEach(([k,v]) => {
+      const el = document.getElementById("chk-" + k);
+      if (el && !el.disabled) el.checked = !!v;
+    });
+  } catch(e) {}
 }
 
 async function saveFilters() {
-  const btn = document.getElementById("btn-save-filters");
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Saving...';
+  ALL_TYPES.filter(t => !t.off).forEach(t => {
+    const el = document.getElementById("chk-" + t.k);
+    if (el) filterState[t.k] = el.checked;
+  });
   try {
-    const res = await fetch("/api/filters", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({filters: filterState})
-    });
-    const data = await res.json();
-    if (data.success) {
-      toast("✅ Filters saved!", false);
-    } else {
-      toast("❌ Save failed: " + (data.error || "unknown"), true);
-    }
-  } catch (e) {
-    toast("❌ Network error", true);
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = "Save Filters";
-  }
+    const d = await apiPost("/api/filters", {filters: filterState});
+    toast(d.success ? "Filters saved!" : "Save failed");
+  } catch(e) { toast("Could not save filters"); }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// TEST PRINT
-// ══════════════════════════════════════════════════════════════════════════════
-async function testPrint() {
-  const btn = document.getElementById("btn-test-print");
-  const cmc = parseInt(document.getElementById("test-cmc").value) || 3;
-  const res_div = document.getElementById("test-result");
-
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Printing...';
-  res_div.innerHTML = "";
-
+// ═══════════════════════════════════════════════════════════
+// CONFIG — DATABASE + STORAGE
+// ═══════════════════════════════════════════════════════════
+async function loadDBStatus() {
   try {
-    const res  = await fetch("/api/test_print", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({cmc})
-    });
-    const data = await res.json();
-
-    if (data.success && data.card) {
-      const c = data.card;
-      res_div.innerHTML = `
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:12px;">
-          <div class="bold" style="color:white">${c.name}</div>
-          <div style="color:var(--muted)">${c.type_line}</div>
-          <div style="color:var(--muted)">${c.mana_cost || "—"} · CMC ${c.cmc}</div>
-        </div>`;
-      toast("🖨️ Printed: " + c.name);
-    } else {
-      res_div.innerHTML = `<div style="color:#f87171;font-size:12px">❌ ${data.error || "Print failed"}</div>`;
-    }
-  } catch (e) {
-    res_div.innerHTML = `<div style="color:#f87171;font-size:12px">❌ Request failed</div>`;
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = "Print Card";
-  }
+    const [st, stat] = await Promise.all([apiGet("/api/status"), apiGet("/api/stats")]);
+    const total = stat.cmc_breakdown
+      ? Object.values(stat.cmc_breakdown).reduce((a,b)=>a+b,0) : 0;
+    const upd   = st.db_last_updated
+      ? new Date(st.db_last_updated).toLocaleDateString() : "Never";
+    document.getElementById("dbi-cards").textContent   = total.toLocaleString();
+    document.getElementById("dbi-updated").textContent = upd;
+    document.getElementById("dbi-status").textContent  = st.db_loaded ? "Ready" : "No database";
+  } catch(e) {}
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// DATABASE UPDATE
-// ══════════════════════════════════════════════════════════════════════════════
+async function loadStorageInfo() {
+  try {
+    const d = await apiGet("/api/system");
+    const s = d.storage || {};
+    const m = d.memory  || {};
+    document.getElementById("sto-free").textContent  = s.free_gb  ? s.free_gb  + " GB" : "N/A";
+    document.getElementById("sto-total").textContent = s.total_gb ? s.total_gb + " GB" : "N/A";
+    document.getElementById("sto-pct").textContent   = s.percent  ? s.percent  + "%"   : "N/A";
+    document.getElementById("sto-ram").textContent   = m.total_mb ? Math.round(m.used_mb) + " / " + Math.round(m.total_mb) + " MB" : "N/A";
+    document.getElementById("sto-plat").textContent  = d.platform === "win32" ? "Windows (Dev)" : d.platform === "linux" ? "Raspberry Pi" : d.platform || "Unknown";
+  } catch(e) {}
+}
+
 async function startUpdate() {
+  if (!confirm("Download ~100MB from Scryfall? Requires Wi-Fi. Takes 5–15 minutes.")) return;
   const btn = document.getElementById("btn-update");
-  if (!confirm("This will download ~100MB from Scryfall and may take 5-15 minutes. Continue?")) return;
-
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Starting...';
-  document.getElementById("update-status").style.display = "block";
-
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+  document.getElementById("upd-wrap").style.display = "block";
   try {
-    const res  = await fetch("/api/update", {method:"POST"});
-    const data = await res.json();
-    if (data.success) {
-      toast("📥 Update started!");
-      if (!updatePollInterval) {
-        updatePollInterval = setInterval(pollUpdate, 2000);
-      }
-    } else {
-      toast("❌ " + (data.error || "Failed to start update"), true);
-      btn.disabled = false;
-      btn.innerHTML = "Download Latest Cards";
-    }
-  } catch (e) {
-    toast("❌ Network error", true);
-    btn.disabled = false;
-    btn.innerHTML = "Download Latest Cards";
-  }
+    const d = await apiPost("/api/update", {});
+    if (d.success) { toast("Update started!"); pollUpdate(); }
+    else { toast("Failed: " + (d.error||"unknown")); btn.disabled=false; btn.textContent="Update Database"; }
+  } catch(e) { toast("Could not reach server"); btn.disabled=false; btn.textContent="Update Database"; }
 }
 
+let updTimer = null;
 async function pollUpdate() {
-  try {
-    const res  = await fetch("/api/update_progress");
-    const data = await res.json();
-
-    document.getElementById("update-msg").textContent = data.progress || "Working...";
-    document.getElementById("update-bar").style.width = (data.percent || 0) + "%";
-    document.getElementById("update-pct").textContent = (data.percent || 0) + "%";
-
-    if (!data.running) {
-      clearInterval(updatePollInterval);
-      updatePollInterval = null;
-      const btn = document.getElementById("btn-update");
-      btn.disabled = false;
-      btn.innerHTML = "Download Latest Cards";
-      if (data.percent >= 100) {
-        toast("✅ Database updated successfully!");
+  if (updTimer) return;
+  updTimer = setInterval(async () => {
+    try {
+      const d = await apiGet("/api/update_progress");
+      document.getElementById("upd-msg").textContent = d.progress || "Working...";
+      document.getElementById("upd-bar").style.width = (d.percent||0) + "%";
+      document.getElementById("upd-pct").textContent = (d.percent||0) + "%";
+      if (!d.running) {
+        clearInterval(updTimer); updTimer = null;
+        const btn = document.getElementById("btn-update");
+        btn.disabled = false; btn.textContent = "Update Database";
+        if ((d.percent||0) >= 100) { toast("Database updated!"); loadDBStatus(); }
       }
-    }
-  } catch (e) {
-    clearInterval(updatePollInterval);
-    updatePollInterval = null;
-  }
+    } catch(e) { clearInterval(updTimer); updTimer = null; }
+  }, 1500);
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// LAST CARD + HISTORY
-// ══════════════════════════════════════════════════════════════════════════════
-async function loadHistory() {
-  try {
-    const res  = await fetch("/api/history");
-    const data = await res.json();
-    renderHistory(data.history || []);
-  } catch (e) {}
-}
-setInterval(loadHistory, 5000);
-loadHistory();
-
-function renderLastCard(card) {
-  const el = document.getElementById("last-card-panel");
-  if (!card) {
-    el.innerHTML = '<div class="empty-state">No cards printed yet</div>';
-    return;
-  }
-  const rarity = card.rarity || "common";
-  el.innerHTML = `
-    <div class="card-name">${card.name || "—"}</div>
-    <div class="card-type">${card.type_line || ""}</div>
-    <div style="margin-top:6px;font-size:13px;color:var(--muted)">
-      ${card.mana_cost || "—"} · CMC ${card.cmc ?? "?"}
-    </div>
-    <span class="card-badge ${rarity}">${rarity}</span>
-    <span class="card-badge">${(card.set||"").toUpperCase()}</span>
-    ${card.timestamp ? `<div style="font-size:11px;color:var(--muted);margin-top:6px">${new Date(card.timestamp).toLocaleTimeString()}</div>` : ""}
-  `;
+// ═══════════════════════════════════════════════════════════
+// API HELPERS
+// ═══════════════════════════════════════════════════════════
+async function apiGet(path) {
+  const r = await fetch(path, {signal: AbortSignal.timeout(8000)});
+  if (!r.ok) { const e = await r.json().catch(()=>({})); throw new Error(e.error||r.status); }
+  return r.json();
 }
 
-function renderHistory(history) {
-  const el = document.getElementById("history-list");
-  if (!history.length) {
-    el.innerHTML = '<div class="empty-state">No print history yet</div>';
-    return;
-  }
-  el.innerHTML = history.slice(0,8).map(c => `
-    <div class="hist-item">
-      <div class="hist-cmc">${c.cmc ?? "?"}</div>
-      <div>
-        <div class="hist-name">${c.name}</div>
-        <div style="font-size:11px;color:var(--muted)">${(c.type_line||"").split("—")[0].trim()}</div>
-      </div>
-      <div class="hist-time">${c.timestamp ? new Date(c.timestamp).toLocaleTimeString() : ""}</div>
-    </div>`).join("");
+async function apiPost(path, body) {
+  const r = await fetch(path, {
+    method: "POST", headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(body), signal: AbortSignal.timeout(10000)
+  });
+  if (!r.ok) { const e = await r.json().catch(()=>({})); throw new Error(e.error||r.status); }
+  return r.json();
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// SYSTEM INFO
-// ══════════════════════════════════════════════════════════════════════════════
-async function loadSysInfo() {
-  const el = document.getElementById("sysinfo-content");
-  try {
-    const res  = await fetch("/api/system");
-    const data = await res.json();
-
-    const tempColor = data.cpu_temp_c > 70 ? "var(--red)" : data.cpu_temp_c > 55 ? "var(--gold-l)" : "var(--green-l)";
-    const rows = [
-      ["Platform",    data.platform || "Unknown"],
-      ["Python",      data.python || "—"],
-      ["CPU Temp",    data.cpu_temp_c != null
-                        ? `<span style="color:${tempColor}">${data.cpu_temp_c}°C</span>` : "N/A"],
-      ["Uptime",      data.uptime || "N/A"],
-      ["Storage",     data.storage?.total_gb
-                        ? `${data.storage.free_gb}GB free / ${data.storage.total_gb}GB total (${data.storage.percent}% used)` : "N/A"],
-      ["Memory",      data.memory?.total_mb
-                        ? `${data.memory.used_mb}MB / ${data.memory.total_mb}MB (${data.memory.percent}%)` : "N/A"],
-    ];
-    el.innerHTML = rows.map(([k,v]) => `
-      <div class="sysinfo-row">
-        <span style="color:var(--muted)">${k}</span>
-        <span class="sysinfo-val">${v}</span>
-      </div>`).join("");
-  } catch (e) {
-    el.innerHTML = '<div class="empty-state">Could not load system info</div>';
-  }
+// ═══════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════
+function esc(s) {
+  return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// CMC GRID
-// ══════════════════════════════════════════════════════════════════════════════
-async function renderCMCGrid() {
-  const grid = document.getElementById("cmc-grid");
-  for (let cmc = 0; cmc <= 16; cmc++) {
-    const cell = document.createElement("div");
-    cell.style.cssText = `
-      background:var(--surface);border:1px solid var(--border);
-      border-radius:8px;padding:6px 4px;text-align:center;cursor:pointer;
-      transition:all .15s;
-    `;
-    cell.innerHTML = `
-      <div style="font-size:18px;font-weight:800;color:var(--blue-l)">${cmc}</div>
-      <div style="font-size:10px;color:var(--muted)" id="cmc-count-${cmc}">…</div>
-    `;
-    cell.onclick = () => {
-      document.getElementById("test-cmc").value = cmc;
-    };
-    grid.appendChild(cell);
-  }
-  // Load counts
-  try {
-    const res  = await fetch("/api/stats");
-    const data = await res.json();
-    const breakdown = data.cmc_breakdown || {};
-    for (let cmc = 0; cmc <= 16; cmc++) {
-      const el = document.getElementById(`cmc-count-${cmc}`);
-      if (el) el.textContent = (breakdown[cmc] || 0).toLocaleString();
-    }
-  } catch (e) {}
+function cleanMana(m) {
+  return String(m||"").replace(/\{([^}]+)\}/g, "[$1]");
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// CMC CONTROLS (web-side CMC adjust)
-// ══════════════════════════════════════════════════════════════════════════════
-function sendCMC(delta) {
-  // Just update the test input for now (encoder controls real CMC)
-  const input = document.getElementById("test-cmc");
-  const val = Math.min(16, Math.max(0, (parseInt(input.value)||0) + delta));
-  input.value = val;
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// TOAST
-// ══════════════════════════════════════════════════════════════════════════════
-let toastTimer = null;
-function toast(msg, isError = false) {
+let toastT;
+function toast(msg) {
   const el = document.getElementById("toast");
-  el.textContent = msg;
-  el.className = "show" + (isError ? " error" : "");
-  if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.className = "", 3500);
+  el.textContent = msg; el.classList.add("show");
+  clearTimeout(toastT);
+  toastT = setTimeout(() => el.classList.remove("show"), 3200);
 }
 </script>
-
 </body>
 </html>

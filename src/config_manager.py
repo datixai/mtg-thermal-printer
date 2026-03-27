@@ -34,7 +34,7 @@ if sys.platform == "win32":
 
 def load_config() -> configparser.ConfigParser:
     """Load and return the config.ini ConfigParser object."""
-    cfg = configparser.ConfigParser()
+    cfg = configparser.ConfigParser(interpolation=None)
     if not CONFIG_PATH.exists():
         raise FileNotFoundError(f"Config file not found: {CONFIG_PATH}")
     cfg.read(str(CONFIG_PATH))
