@@ -1,0 +1,17 @@
+# ============================================================
+# Windows / Dev Machine Dependencies (no GPIO hardware needed)
+# Datix AI | Ahmed Ali | datixai.com
+# ============================================================
+# Install:
+#   pip install -r requirements_dev.txt
+
+flask>=3.0.0
+Pillow>=10.0.0
+qrcode[pil]>=7.4.0
+python-escpos>=3.1.0
+luma.oled>=3.12.0
+luma.core>=2.4.0
+psutil>=5.9.0
+
+# Mock for luma emulator (optional visual OLED simulation)
+# luma.emulator>=1.4.0

@@ -1,0 +1,25 @@
+[Unit]
+Description=Datix AI — MTG Thermal Card Printer
+Documentation=https://datixai.com
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/mtg-printer
+ExecStart=/usr/bin/python3 /home/pi/mtg-printer/src/main.py
+Restart=on-failure
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mtg-printer
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONPATH=/home/pi/mtg-printer/src
+
+# Allow GPIO access
+SupplementaryGroups=gpio i2c spi dialout
+
+[Install]
+WantedBy=multi-user.target

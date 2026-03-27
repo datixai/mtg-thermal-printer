@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MTG Printer — Datix AI</title>
+  <style>
+    :root {
+      --bg:       #0a1628;
+      --surface:  #111d33;
+      --card:     #162040;
+      --border:   #1e3058;
+      --blue:     #2563ab;
+      --blue-l:   #3b82f6;
+      --blue-pale:#dbeafe;
+      --green:    #16a34a;
+      --green-l:  #22c55e;
+      --red:      #dc2626;
+      --gold:     #d97706;
+      --gold-l:   #fbbf24;
+      --text:     #e2e8f0;
+      --muted:    #64748b;
+      --radius:   12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ─────────────────────────────────────────────────── */
+    header {
+      background: var(--surface);
+      border-bottom: 2px solid var(--blue);
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .logo { display:flex; align-items:center; gap:10px; }
+    .logo-icon {
+      width:32px; height:32px;
+      background: linear-gradient(135deg,#3b82f6,#7c3aed);
+      border-radius:8px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:18px;
+    }
+    .logo-text { font-size:15px; font-weight:700; color:white; }
+    .logo-sub  { font-size:11px; color:var(--muted); }
+    #conn-dot {
+      width:10px; height:10px; border-radius:50%;
+      background:var(--muted); display:inline-block;
+      transition: background .3s;
+    }
+    #conn-dot.online  { background:var(--green-l); box-shadow:0 0 6px var(--green-l); }
+    #conn-dot.offline { background:var(--red); }
+
+    /* ── Layout ─────────────────────────────────────────────────── */
+    main { max-width:900px; margin:0 auto; padding:20px 16px 60px; }
+    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media(max-width:600px){ .grid-2{ grid-template-columns:1fr; } }
+    .grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+    @media(max-width:600px){ .grid-3{ grid-template-columns:1fr 1fr; } }
+
+    /* ── Cards ──────────────────────────────────────────────────── */
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+    }
+    .panel-title {
+      font-size:11px; font-weight:700; color:var(--muted);
+      text-transform:uppercase; letter-spacing:.08em;
+      margin-bottom:14px;
+      display:flex; align-items:center; gap:6px;
+    }
+    .panel-title .icon { font-size:14px; }
+
+    /* ── Status display (OLED simulation) ──────────────────────── */
+    .oled-sim {
+      background:#000;
+      border:2px solid #2a2a2a;
+      border-radius:8px;
+      padding:14px 16px;
+      font-family:'Courier New',monospace;
+      min-height:64px;
+      display:flex; flex-direction:column; justify-content:center;
+    }
+    .oled-cmc {
+      font-size:36px; font-weight:900; color:#fff;
+      line-height:1; letter-spacing:-1px;
+    }
+    .oled-label { font-size:10px; color:#666; margin-bottom:2px; }
+    .oled-status {
+      font-size:11px; color:#aaa;
+      border-top:1px solid #222; margin-top:6px; padding-top:5px;
+    }
+
+    /* ── Big stat numbers ──────────────────────────────────────── */
+    .stat-val { font-size:28px; font-weight:800; color:var(--blue-l); line-height:1; }
+    .stat-lbl { font-size:12px; color:var(--muted); margin-top:3px; }
+
+    /* ── Buttons ────────────────────────────────────────────────── */
+    .btn {
+      display:inline-flex; align-items:center; justify-content:center; gap:6px;
+      padding:9px 18px; border-radius:8px;
+      font-size:13px; font-weight:600; border:none; cursor:pointer;
+      transition: all .15s; text-decoration:none;
+    }
+    .btn-primary { background:var(--blue); color:white; }
+    .btn-primary:hover { background:var(--blue-l); }
+    .btn-success { background:var(--green); color:white; }
+    .btn-success:hover { background:var(--green-l); }
+    .btn-danger  { background:var(--red); color:white; }
+    .btn-ghost   { background:var(--border); color:var(--text); }
+    .btn-ghost:hover { background:#2a3c5a; }
+    .btn:disabled { opacity:.5; cursor:not-allowed; }
+    .btn-full { width:100%; }
+    .btn-sm { padding:6px 12px; font-size:12px; }
+
+    /* ── Filter toggles ────────────────────────────────────────── */
+    .filter-grid {
+      display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px;
+    }
+    .filter-btn {
+      padding:10px 12px; border-radius:8px; border:2px solid var(--border);
+      background:var(--surface); cursor:pointer; transition:all .15s;
+      display:flex; align-items:center; justify-content:space-between;
+      font-size:13px; font-weight:600; color:var(--text);
+    }
+    .filter-btn.active {
+      border-color:var(--green);
+      background:rgba(22,163,74,.15);
+      color:var(--green-l);
+    }
+    .filter-btn:hover { border-color:var(--blue-l); }
+    .toggle-dot {
+      width:20px; height:20px; border-radius:50%; flex-shrink:0;
+      transition:background .15s;
+    }
+    .filter-btn.active .toggle-dot { background:var(--green-l); }
+    .filter-btn:not(.active) .toggle-dot { background:var(--border); }
+
+    /* ── Progress bar ───────────────────────────────────────────── */
+    .progress-wrap {
+      background:var(--border); border-radius:4px; height:6px;
+      overflow:hidden; margin-top:8px;
+    }
+    .progress-bar {
+      height:100%; background:var(--blue-l);
+      border-radius:4px; transition:width .3s;
+    }
+    .progress-text { font-size:12px; color:var(--muted); margin-top:4px; }
+
+    /* ── Last card ──────────────────────────────────────────────── */
+    .card-name { font-size:16px; font-weight:700; color:white; }
+    .card-type { font-size:12px; color:var(--muted); margin-top:2px; }
+    .card-badge {
+      display:inline-block; padding:2px 8px;
+      border-radius:99px; font-size:11px; font-weight:600;
+      background:var(--border); color:var(--text); margin-top:6px;
+    }
+    .card-badge.rare      { background:#7c3aed22; color:#a78bfa; border:1px solid #7c3aed44; }
+    .card-badge.mythic    { background:var(--gold)22; color:var(--gold-l); border:1px solid var(--gold)44; }
+    .card-badge.uncommon  { background:#64748b22; color:#94a3b8; border:1px solid #64748b44; }
+    .card-badge.common    { background:#11182222; color:#64748b; border:1px solid #64748b22; }
+
+    /* ── History list ───────────────────────────────────────────── */
+    .hist-item {
+      display:flex; align-items:center; gap:10px;
+      padding:8px 0; border-bottom:1px solid var(--border);
+    }
+    .hist-item:last-child { border-bottom:none; }
+    .hist-cmc {
+      width:28px; height:28px; border-radius:50%;
+      background:var(--blue); color:white;
+      display:flex; align-items:center; justify-content:center;
+      font-size:12px; font-weight:800; flex-shrink:0;
+    }
+    .hist-name { font-size:13px; font-weight:600; }
+    .hist-time { font-size:11px; color:var(--muted); margin-left:auto; }
+
+    /* ── System info ────────────────────────────────────────────── */
+    .sysinfo-row {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:6px 0; border-bottom:1px solid var(--border);
+      font-size:13px;
+    }
+    .sysinfo-row:last-child { border-bottom:none; }
+    .sysinfo-val { font-weight:600; color:var(--blue-l); }
+
+    /* ── CMC test ───────────────────────────────────────────────── */
+    .cmc-input {
+      background:var(--surface); border:1px solid var(--border);
+      color:var(--text); padding:8px 12px; border-radius:8px;
+      font-size:14px; font-weight:700; width:70px; text-align:center;
+    }
+
+    /* ── Toast ──────────────────────────────────────────────────── */
+    #toast {
+      position:fixed; bottom:24px; right:24px;
+      background:#1e293b; color:white;
+      padding:12px 20px; border-radius:10px;
+      font-size:13px; font-weight:600;
+      box-shadow:0 4px 20px rgba(0,0,0,.5);
+      border-left:4px solid var(--green);
+      transform:translateY(100px); opacity:0;
+      transition:all .3s; z-index:999;
+      max-width:280px;
+    }
+    #toast.show { transform:translateY(0); opacity:1; }
+    #toast.error { border-left-color:var(--red); }
+
+    /* ── Misc ───────────────────────────────────────────────────── */
+    .section-gap { margin-top:20px; }
+    .row-gap { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .chip {
+      display:inline-block; padding:3px 10px; border-radius:99px;
+      font-size:11px; background:var(--border); color:var(--muted);
+    }
+    .text-green { color:var(--green-l); }
+    .text-red   { color:#f87171; }
+    .text-gold  { color:var(--gold-l); }
+    .bold { font-weight:700; }
+    label { font-size:13px; color:var(--muted); display:block; margin-bottom:6px; }
+    .empty-state { color:var(--muted); font-size:13px; text-align:center; padding:20px; }
+    .mb-2 { margin-bottom:8px; }
+    .mt-2 { margin-top:8px; }
+    .spinner {
+      display:inline-block; width:14px; height:14px;
+      border:2px solid var(--border); border-top-color:var(--blue-l);
+      border-radius:50%; animation:spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<!-- ══ HEADER ════════════════════════════════════════════════════════════ -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🃏</div>
+    <div>
+      <div class="logo-text">MTG Printer</div>
+      <div class="logo-sub">Datix AI · datixai.com</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <span id="conn-dot"></span>
+    <span style="font-size:12px;color:var(--muted)" id="conn-label">Connecting...</span>
+  </div>
+</header>
+
+<!-- ══ MAIN ══════════════════════════════════════════════════════════════ -->
+<main>
+
+  <!-- Row 1: OLED + Status -->
+  <div class="grid-2 mb-2">
+
+    <!-- OLED Simulation -->
+    <div class="panel">
+      <div class="panel-title"><span class="icon">📺</span> Device Display</div>
+      <div class="oled-sim">
+        <div class="oled-label">CMC</div>
+        <div class="oled-cmc" id="oled-cmc">0</div>
+        <div class="oled-status" id="oled-status">Connecting...</div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="sendCMC(-1)">◀ CMC-1</button>
+        <button class="btn btn-ghost btn-sm" onclick="sendCMC(+1)">CMC+1 ▶</button>
+      </div>
+    </div>
+
+    <!-- Quick stats -->
+    <div class="panel">
+      <div class="panel-title"><span class="icon">📊</span> Database</div>
+      <div class="grid-2" style="gap:12px">
+        <div>
+          <div class="stat-val" id="stat-cards">—</div>
+          <div class="stat-lbl">Total Cards</div>
+        </div>
+        <div>
+          <div class="stat-val" id="stat-prints">0</div>
+          <div class="stat-lbl">Prints (session)</div>
+        </div>
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:var(--muted)">
+        Last updated: <span id="stat-updated">—</span>
+      </div>
+      <div style="margin-top:8px;font-size:12px;" id="stat-platform"></div>
+    </div>
+  </div>
+
+  <!-- Row 2: Card Filters -->
+  <div class="panel section-gap">
+    <div class="panel-title" style="justify-content:space-between">
+      <span><span class="icon">🎴</span> Card Type Filters</span>
+      <button class="btn btn-success btn-sm" id="btn-save-filters" onclick="saveFilters()">
+        Save Filters
+      </button>
+    </div>
+    <div class="filter-grid" id="filter-grid">
+      <!-- Populated by JS -->
+    </div>
+    <div style="margin-top:10px;font-size:12px;color:var(--muted)" id="filter-hint">
+      Toggle which card types are included in random selection. Changes take effect immediately.
+    </div>
+  </div>
+
+  <!-- Row 3: Test Print + Update -->
+  <div class="grid-2 section-gap">
+
+    <!-- Test Print -->
+    <div class="panel">
+      <div class="panel-title"><span class="icon">🖨️</span> Test Print</div>
+      <label>CMC Value</label>
+      <div class="row-gap">
+        <input type="number" id="test-cmc" class="cmc-input" value="3" min="0" max="16"/>
+        <button class="btn btn-primary" onclick="testPrint()" id="btn-test-print">
+          Print Card
+        </button>
+      </div>
+      <div style="margin-top:12px;" id="test-result"></div>
+    </div>
+
+    <!-- Database Update -->
+    <div class="panel">
+      <div class="panel-title"><span class="icon">🔄</span> Update Database</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+        Downloads latest card data from Scryfall. Requires Wi-Fi (~100MB). Takes 5–15 minutes.
+      </p>
+      <button class="btn btn-primary btn-full" id="btn-update" onclick="startUpdate()">
+        Download Latest Cards
+      </button>
+      <div id="update-status" style="margin-top:10px;display:none">
+        <div class="progress-text" id="update-msg">Starting...</div>
+        <div class="progress-wrap">
+          <div class="progress-bar" id="update-bar" style="width:0%"></div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px" id="update-pct">0%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 4: Last Card + History -->
+  <div class="grid-2 section-gap">
+
+    <!-- Last Printed Card -->
+    <div class="panel">
+      <div class="panel-title"><span class="icon">🃏</span> Last Printed</div>
+      <div id="last-card-panel">
+        <div class="empty-state">No cards printed yet</div>
+      </div>
+    </div>
+
+    <!-- Print History -->
+    <div class="panel">
+      <div class="panel-title"><span class="icon">📜</span> Print History</div>
+      <div id="history-list">
+        <div class="empty-state">No history yet</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 5: System Info -->
+  <div class="panel section-gap">
+    <div class="panel-title"><span class="icon">⚙️</span> System Information</div>
+    <div id="sysinfo-content">
+      <div class="empty-state">Loading...</div>
+    </div>
+    <div style="margin-top:12px">
+      <button class="btn btn-ghost btn-sm" onclick="loadSysInfo()">Refresh</button>
+    </div>
+  </div>
+
+  <!-- CMC availability checker -->
+  <div class="panel section-gap">
+    <div class="panel-title"><span class="icon">🔍</span> CMC Card Availability</div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+      Check how many cards are available at each mana cost with current filters.
+    </p>
+    <div id="cmc-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:6px">
+      <!-- populated by JS -->
+    </div>
+  </div>
+
+</main>
+
+<!-- Toast notification -->
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════════════════════
+const API = "";  // Same origin
+let filterState = {};
+let pollInterval = null;
+let updatePollInterval = null;
+let currentCMC = 0;
+
+// ══════════════════════════════════════════════════════════════════════════════
+// INITIALISATION
+// ══════════════════════════════════════════════════════════════════════════════
+document.addEventListener("DOMContentLoaded", () => {
+  initFilters();
+  startPolling();
+  loadSysInfo();
+  renderCMCGrid();
+});
+
+function startPolling() {
+  poll();
+  pollInterval = setInterval(poll, 1500);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// POLLING — device status
+// ══════════════════════════════════════════════════════════════════════════════
+async function poll() {
+  try {
+    const res  = await fetch("/api/status");
+    const data = await res.json();
+
+    // Connection indicator
+    setConnected(true);
+
+    // OLED simulation
+    const cmc = data.cmc ?? 0;
+    currentCMC = cmc;
+    document.getElementById("oled-cmc").textContent    = cmc;
+    document.getElementById("oled-status").textContent = data.status ?? "—";
+
+    // Stats
+    document.getElementById("stat-cards").textContent  = data.db_card_count?.toLocaleString() ?? "—";
+    document.getElementById("stat-prints").textContent = data.print_count ?? "0";
+    document.getElementById("stat-updated").textContent= data.db_last_updated
+      ? new Date(data.db_last_updated).toLocaleDateString() : "Never";
+
+    const plat = document.getElementById("stat-platform");
+    if (data.simulation_mode || data.platform === "Simulation") {
+      plat.innerHTML = '<span class="chip">🖥️ Simulation mode</span>';
+    } else {
+      plat.innerHTML = '<span class="chip text-green">🔴 Live — Raspberry Pi</span>';
+    }
+
+    // Last card
+    renderLastCard(data.last_card);
+
+    // Update check
+    if (data.update_running) {
+      pollUpdate();
+    }
+
+  } catch (e) {
+    setConnected(false);
+  }
+}
+
+function setConnected(online) {
+  const dot   = document.getElementById("conn-dot");
+  const label = document.getElementById("conn-label");
+  dot.className = online ? "online" : "offline";
+  label.textContent = online ? "Connected" : "Offline";
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FILTERS
+// ══════════════════════════════════════════════════════════════════════════════
+const FILTER_NAMES = [
+  "artifact","battle","creature","enchantment","instant","planeswalker","sorcery"
+];
+const FILTER_ICONS = {
+  artifact:"⚙️", battle:"⚔️", creature:"🐉",
+  enchantment:"✨", instant:"⚡", planeswalker:"🌟", sorcery:"🌀"
+};
+
+async function initFilters() {
+  try {
+    const res  = await fetch("/api/filters");
+    const data = await res.json();
+    filterState = data.filters ?? {};
+    renderFilters();
+  } catch (e) {
+    // Use defaults
+    FILTER_NAMES.forEach(t => filterState[t] = true);
+    renderFilters();
+  }
+}
+
+function renderFilters() {
+  const grid = document.getElementById("filter-grid");
+  grid.innerHTML = "";
+  FILTER_NAMES.forEach(type => {
+    const enabled = filterState[type] !== false;
+    const btn = document.createElement("button");
+    btn.className = "filter-btn" + (enabled ? " active" : "");
+    btn.dataset.type = type;
+    btn.innerHTML = `
+      <span>${FILTER_ICONS[type]} ${type.charAt(0).toUpperCase()+type.slice(1)}</span>
+      <div class="toggle-dot"></div>
+    `;
+    btn.onclick = () => toggleFilter(type, btn);
+    grid.appendChild(btn);
+  });
+}
+
+function toggleFilter(type, btn) {
+  filterState[type] = !filterState[type];
+  btn.classList.toggle("active", filterState[type]);
+  // Update hint
+  const enabled = FILTER_NAMES.filter(t => filterState[t] !== false);
+  document.getElementById("filter-hint").textContent =
+    enabled.length === 0
+      ? "⚠️ Warning: All types disabled — no cards will be selectable!"
+      : `${enabled.length} type(s) active. Click Save Filters to apply.`;
+}
+
+async function saveFilters() {
+  const btn = document.getElementById("btn-save-filters");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Saving...';
+  try {
+    const res = await fetch("/api/filters", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({filters: filterState})
+    });
+    const data = await res.json();
+    if (data.success) {
+      toast("✅ Filters saved!", false);
+    } else {
+      toast("❌ Save failed: " + (data.error || "unknown"), true);
+    }
+  } catch (e) {
+    toast("❌ Network error", true);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = "Save Filters";
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TEST PRINT
+// ══════════════════════════════════════════════════════════════════════════════
+async function testPrint() {
+  const btn = document.getElementById("btn-test-print");
+  const cmc = parseInt(document.getElementById("test-cmc").value) || 3;
+  const res_div = document.getElementById("test-result");
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Printing...';
+  res_div.innerHTML = "";
+
+  try {
+    const res  = await fetch("/api/test_print", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({cmc})
+    });
+    const data = await res.json();
+
+    if (data.success && data.card) {
+      const c = data.card;
+      res_div.innerHTML = `
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:12px;">
+          <div class="bold" style="color:white">${c.name}</div>
+          <div style="color:var(--muted)">${c.type_line}</div>
+          <div style="color:var(--muted)">${c.mana_cost || "—"} · CMC ${c.cmc}</div>
+        </div>`;
+      toast("🖨️ Printed: " + c.name);
+    } else {
+      res_div.innerHTML = `<div style="color:#f87171;font-size:12px">❌ ${data.error || "Print failed"}</div>`;
+    }
+  } catch (e) {
+    res_div.innerHTML = `<div style="color:#f87171;font-size:12px">❌ Request failed</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = "Print Card";
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DATABASE UPDATE
+// ══════════════════════════════════════════════════════════════════════════════
+async function startUpdate() {
+  const btn = document.getElementById("btn-update");
+  if (!confirm("This will download ~100MB from Scryfall and may take 5-15 minutes. Continue?")) return;
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Starting...';
+  document.getElementById("update-status").style.display = "block";
+
+  try {
+    const res  = await fetch("/api/update", {method:"POST"});
+    const data = await res.json();
+    if (data.success) {
+      toast("📥 Update started!");
+      if (!updatePollInterval) {
+        updatePollInterval = setInterval(pollUpdate, 2000);
+      }
+    } else {
+      toast("❌ " + (data.error || "Failed to start update"), true);
+      btn.disabled = false;
+      btn.innerHTML = "Download Latest Cards";
+    }
+  } catch (e) {
+    toast("❌ Network error", true);
+    btn.disabled = false;
+    btn.innerHTML = "Download Latest Cards";
+  }
+}
+
+async function pollUpdate() {
+  try {
+    const res  = await fetch("/api/update_progress");
+    const data = await res.json();
+
+    document.getElementById("update-msg").textContent = data.progress || "Working...";
+    document.getElementById("update-bar").style.width = (data.percent || 0) + "%";
+    document.getElementById("update-pct").textContent = (data.percent || 0) + "%";
+
+    if (!data.running) {
+      clearInterval(updatePollInterval);
+      updatePollInterval = null;
+      const btn = document.getElementById("btn-update");
+      btn.disabled = false;
+      btn.innerHTML = "Download Latest Cards";
+      if (data.percent >= 100) {
+        toast("✅ Database updated successfully!");
+      }
+    }
+  } catch (e) {
+    clearInterval(updatePollInterval);
+    updatePollInterval = null;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// LAST CARD + HISTORY
+// ══════════════════════════════════════════════════════════════════════════════
+async function loadHistory() {
+  try {
+    const res  = await fetch("/api/history");
+    const data = await res.json();
+    renderHistory(data.history || []);
+  } catch (e) {}
+}
+setInterval(loadHistory, 5000);
+loadHistory();
+
+function renderLastCard(card) {
+  const el = document.getElementById("last-card-panel");
+  if (!card) {
+    el.innerHTML = '<div class="empty-state">No cards printed yet</div>';
+    return;
+  }
+  const rarity = card.rarity || "common";
+  el.innerHTML = `
+    <div class="card-name">${card.name || "—"}</div>
+    <div class="card-type">${card.type_line || ""}</div>
+    <div style="margin-top:6px;font-size:13px;color:var(--muted)">
+      ${card.mana_cost || "—"} · CMC ${card.cmc ?? "?"}
+    </div>
+    <span class="card-badge ${rarity}">${rarity}</span>
+    <span class="card-badge">${(card.set||"").toUpperCase()}</span>
+    ${card.timestamp ? `<div style="font-size:11px;color:var(--muted);margin-top:6px">${new Date(card.timestamp).toLocaleTimeString()}</div>` : ""}
+  `;
+}
+
+function renderHistory(history) {
+  const el = document.getElementById("history-list");
+  if (!history.length) {
+    el.innerHTML = '<div class="empty-state">No print history yet</div>';
+    return;
+  }
+  el.innerHTML = history.slice(0,8).map(c => `
+    <div class="hist-item">
+      <div class="hist-cmc">${c.cmc ?? "?"}</div>
+      <div>
+        <div class="hist-name">${c.name}</div>
+        <div style="font-size:11px;color:var(--muted)">${(c.type_line||"").split("—")[0].trim()}</div>
+      </div>
+      <div class="hist-time">${c.timestamp ? new Date(c.timestamp).toLocaleTimeString() : ""}</div>
+    </div>`).join("");
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SYSTEM INFO
+// ══════════════════════════════════════════════════════════════════════════════
+async function loadSysInfo() {
+  const el = document.getElementById("sysinfo-content");
+  try {
+    const res  = await fetch("/api/system");
+    const data = await res.json();
+
+    const tempColor = data.cpu_temp_c > 70 ? "var(--red)" : data.cpu_temp_c > 55 ? "var(--gold-l)" : "var(--green-l)";
+    const rows = [
+      ["Platform",    data.platform || "Unknown"],
+      ["Python",      data.python || "—"],
+      ["CPU Temp",    data.cpu_temp_c != null
+                        ? `<span style="color:${tempColor}">${data.cpu_temp_c}°C</span>` : "N/A"],
+      ["Uptime",      data.uptime || "N/A"],
+      ["Storage",     data.storage?.total_gb
+                        ? `${data.storage.free_gb}GB free / ${data.storage.total_gb}GB total (${data.storage.percent}% used)` : "N/A"],
+      ["Memory",      data.memory?.total_mb
+                        ? `${data.memory.used_mb}MB / ${data.memory.total_mb}MB (${data.memory.percent}%)` : "N/A"],
+    ];
+    el.innerHTML = rows.map(([k,v]) => `
+      <div class="sysinfo-row">
+        <span style="color:var(--muted)">${k}</span>
+        <span class="sysinfo-val">${v}</span>
+      </div>`).join("");
+  } catch (e) {
+    el.innerHTML = '<div class="empty-state">Could not load system info</div>';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CMC GRID
+// ══════════════════════════════════════════════════════════════════════════════
+async function renderCMCGrid() {
+  const grid = document.getElementById("cmc-grid");
+  for (let cmc = 0; cmc <= 16; cmc++) {
+    const cell = document.createElement("div");
+    cell.style.cssText = `
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:8px;padding:6px 4px;text-align:center;cursor:pointer;
+      transition:all .15s;
+    `;
+    cell.innerHTML = `
+      <div style="font-size:18px;font-weight:800;color:var(--blue-l)">${cmc}</div>
+      <div style="font-size:10px;color:var(--muted)" id="cmc-count-${cmc}">…</div>
+    `;
+    cell.onclick = () => {
+      document.getElementById("test-cmc").value = cmc;
+    };
+    grid.appendChild(cell);
+  }
+  // Load counts
+  try {
+    const res  = await fetch("/api/stats");
+    const data = await res.json();
+    const breakdown = data.cmc_breakdown || {};
+    for (let cmc = 0; cmc <= 16; cmc++) {
+      const el = document.getElementById(`cmc-count-${cmc}`);
+      if (el) el.textContent = (breakdown[cmc] || 0).toLocaleString();
+    }
+  } catch (e) {}
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CMC CONTROLS (web-side CMC adjust)
+// ══════════════════════════════════════════════════════════════════════════════
+function sendCMC(delta) {
+  // Just update the test input for now (encoder controls real CMC)
+  const input = document.getElementById("test-cmc");
+  const val = Math.min(16, Math.max(0, (parseInt(input.value)||0) + delta));
+  input.value = val;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════════════════════════
+let toastTimer = null;
+function toast(msg, isError = false) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.className = "show" + (isError ? " error" : "");
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.className = "", 3500);
+}
+</script>
+
+</body>
+</html>

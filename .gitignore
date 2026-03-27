@@ -1,0 +1,121 @@
+# ============================================================
+# MTG Printer — .gitignore
+# Datix AI | Ahmed Ali | datixai.com
+# ============================================================
+
+# ── Python ────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.whl
+MANIFEST
+pip-wheel-metadata/
+
+# ── Virtual environments ──────────────────────────────────────
+venv/
+.venv/
+env/
+.env/
+ENV/
+env.bak/
+venv.bak/
+.python-version
+
+# ── Environment / secrets ─────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.secret
+secrets.ini
+
+# ── VS Code ───────────────────────────────────────────────────
+.vscode/
+!.vscode/launch.json
+!.vscode/settings.json
+
+# ── IDEs ──────────────────────────────────────────────────────
+.idea/
+*.iml
+.project
+.classpath
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# ── OS files ──────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ── Project data (large files, auto-generated) ────────────────
+data/cards/*.gz
+data/cards/*.json
+data/cards/*.db
+data/cards/index.json
+data/art/*.png
+data/art/*.jpg
+data/art/*.bmp
+logs/*.log
+logs/*.log.*
+assets/default_art.png
+
+# ── Fonts (install locally from fonts/README.txt) ─────────────
+fonts/*.ttf
+fonts/*.otf
+fonts/*.woff
+fonts/*.woff2
+
+# ── Node / npm (for web/ Vercel deployment) ───────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp
+.pnp.js
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+*.tgz
+
+# ── Next.js / Vercel build outputs ───────────────────────────
+web/.next/
+web/out/
+web/.vercel/
+.vercel/
+.next/
+out/
+
+# ── Coverage / testing ────────────────────────────────────────
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# ── Distribution ─────────────────────────────────────────────
+*.zip
+*.tar.gz
+*.rar
+
+# ── Raspberry Pi specific ─────────────────────────────────────
+*.img
+*.iso

@@ -1,0 +1,34 @@
+# ============================================================
+# MTG Printer — Python Dependencies
+# Datix AI | Ahmed Ali | datixai.com
+# ============================================================
+# Install on Raspberry Pi:
+#   pip install -r requirements.txt --break-system-packages
+#
+# Install on Windows (dev/simulation):
+#   pip install -r requirements_dev.txt
+
+# Core web framework
+flask>=3.0.0
+
+# Thermal printer control (ESC/POS)
+python-escpos>=3.1.0
+
+# OLED display (luma.oled requires luma.core)
+luma.oled>=3.12.0
+luma.core>=2.4.0
+
+# Image processing
+Pillow>=10.0.0
+
+# QR code generation
+qrcode[pil]>=7.4.0
+
+# GPIO (Raspberry Pi only — will fail gracefully on other platforms)
+# RPi.GPIO>=0.7.1   # Uncomment on Pi OR install separately
+
+# Optional: better system info
+# psutil>=5.9.0
+
+# Optional: faster GPIO
+# pigpio>=1.78

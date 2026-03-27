@@ -1,0 +1,5 @@
+# Application logs are written here.
+# mtg_printer.log — main log file (rotates at 5MB, keeps 3 backups)
+# View live logs on Pi:
+#   tail -f logs/mtg_printer.log
+#   sudo journalctl -u mtg-printer.service -f

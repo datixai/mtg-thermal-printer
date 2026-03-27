@@ -1,0 +1,6 @@
+# Card database files will be stored here after running:
+# python src/main.py --update
+#
+# Files created:
+#   all_cards.json.gz   — compressed card database (~15-30 MB)
+#   index.json          — metadata (last updated, card count)

@@ -1,0 +1,4 @@
+# Card artwork cache files will be stored here automatically.
+# Files are downloaded and dithered on demand during printing.
+# Format: {md5_of_url}.png  (1-bit monochrome, printer-ready)
+# Safe to delete to free space — will re-download as needed.

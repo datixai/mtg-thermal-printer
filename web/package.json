@@ -1,0 +1,13 @@
+{
+  "name": "mtg-printer-dashboard",
+  "version": "1.0.0",
+  "description": "Remote web dashboard for the Datix AI MTG Thermal Printer (Raspberry Pi)",
+  "private": true,
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx serve . -p 3000"
+  },
+  "keywords": ["mtg", "raspberry-pi", "thermal-printer", "magic-the-gathering"],
+  "author": "Ahmed Ali <datixai.com>",
+  "license": "MIT"
+}
