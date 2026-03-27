@@ -322,26 +322,6 @@ http://[PI-IP]:5000 → Update Database → Download Latest Cards
 
 ---
 
-## Vercel Web Dashboard
-
-Deploy the remote dashboard so you can access it from any browser.
-
-### 1. Push repo to GitHub
-
-### 2. Deploy to Vercel
-- Go to [vercel.com](https://vercel.com) → New Project
-- Import your GitHub repo
-- **Set Root Directory to `web`**
-- Framework: **Other**
-- Click **Deploy**
-
-### 3. Open your Vercel URL
-- First visit shows a setup screen — enter your Pi's IP address
-- Pi and your browser must be on the same Wi-Fi network
-- The dashboard saves the IP in your browser and connects directly
-
----
-
 ## API Reference
 
 The Flask server on the Pi exposes these endpoints:
